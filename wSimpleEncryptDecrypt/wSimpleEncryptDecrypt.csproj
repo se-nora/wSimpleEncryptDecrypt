@@ -15,6 +15,7 @@
     <WarningLevel>4</WarningLevel>
     <NuGetPackageImportStamp>
     </NuGetPackageImportStamp>
+    <Version>1.0.1</Version>
     <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -142,11 +143,77 @@
     <Resource Include="y u no.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
-       Other similar extension points exist, see Microsoft.Common.targets.
+  <!-- Clean output directories before build -->
+  <Target Name="CleanOutputDirs" BeforeTargets="BeforeBuild">
+    <RemoveDir Directories="$(OutDir)" />
+  </Target>
   <Target Name="BeforeBuild">
+    <PropertyGroup>
+      <IntermediateSourcePath>$(IntermediateOutputPath)src\</IntermediateSourcePath>
+    </PropertyGroup>
+    <Copy SourceFiles="@(ToCompile)" DestinationFiles="@(ToCompile->'$(IntermediateSourcePath)%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true">
+      <Output TaskParameter="CopiedFiles" ItemName="Compile" />
+    </Copy>
+    <ReplaceFileText InputFilename="Properties\AssemblyInfo.cs" OutputFilename="Properties\AssemblyInfo.cs" MatchExpression="Version\(.*\)" ReplacementText="Version(&quot;$(Version)&quot;)" />
   </Target>
-  <Target Name="AfterBuild">
+  <!-- Source: https://stackoverflow.com/a/38127938 -->
+  <Target Name="CreateZip" AfterTargets="AfterBuild" Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <Exec Command="git rev-parse HEAD &gt; $(IntermediateOutputPath)head" />
+    <ReadLinesFromFile File="$(IntermediateOutputPath)head">
+        <Output TaskParameter="Lines" PropertyName="FullCommitHash" /> 
+    </ReadLinesFromFile>
+    <Delete Files="$(IntermediateOutputPath)head" />
+    <PropertyGroup>
+      <CommitHash>$(FullCommitHash.Substring(0, 8))</CommitHash>
+    </PropertyGroup>
+    <ZipDir ZipFileName="$(OutDir)..\$(AssemblyName)-$(Version)-$(CommitHash).zip" DirectoryName="$(OutDir)" />
   </Target>
-  -->
+  <UsingTask TaskName="ZipDir" TaskFactory="CodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.v12.0.dll">
+    <ParameterGroup>
+      <ZipFileName ParameterType="System.String" Required="true" />
+      <DirectoryName ParameterType="System.String" Required="true" />
+    </ParameterGroup>
+    <Task>
+      <Reference Include="System.IO.Compression.FileSystem" />
+      <Using Namespace="System.IO.Compression" />
+      <Code Type="Fragment" Language="cs"><![CDATA[
+        try
+        {
+          Log.LogMessage(string.Format("Zipping Directory {0} to {1}", DirectoryName, ZipFileName));
+          ZipFile.CreateFromDirectory(DirectoryName, ZipFileName);
+          return true;
+        }
+        catch(Exception ex)
+        {
+          Log.LogErrorFromException(ex);
+          return false;
+        }
+      ]]></Code>
+    </Task>
+  </UsingTask>
+  <!-- Source: https://stackoverflow.com/a/22571621 -->
+  <UsingTask TaskName="ReplaceFileText" TaskFactory="CodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.v4.0.dll">
+    <ParameterGroup>
+      <InputFilename ParameterType="System.String" Required="true" />
+      <OutputFilename ParameterType="System.String" Required="true" />
+      <MatchExpression ParameterType="System.String" Required="true" />
+      <ReplacementText ParameterType="System.String" Required="true" />
+    </ParameterGroup>
+    <Task>
+      <Reference Include="System.Core" />
+      <Using Namespace="System" />
+      <Using Namespace="System.IO" />
+      <Using Namespace="System.Text.RegularExpressions" />
+      <Code Type="Fragment" Language="cs">
+        <![CDATA[
+          Log.LogMessage(string.Format("Replacing {0} in {1} to {2}", MatchExpression, InputFilename, ReplacementText));
+          Console.WriteLine(MatchExpression);
+          File.WriteAllText(
+            OutputFilename,
+            Regex.Replace(File.ReadAllText(InputFilename), MatchExpression, ReplacementText)
+          );
+        ]]>
+      </Code>
+    </Task>
+  </UsingTask>
 </Project>

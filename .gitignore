@@ -1,0 +1,6 @@
+/.vs
+/packages
+*.suo
+bin
+obj
+*.user

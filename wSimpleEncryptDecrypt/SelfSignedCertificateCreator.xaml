@@ -1,0 +1,105 @@
+﻿<Window x:Class="wSimpleEncryptDecrypt.SelfSignedCertificateCreator"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:wSimpleEncryptDecrypt"
+             xmlns:model="clr-namespace:wSimpleEncryptDecrypt.Model"
+             xmlns:helper="clr-namespace:wSimpleEncryptDecrypt.Helper"
+             xmlns:converter="clr-namespace:wSimpleEncryptDecrypt.Converter"
+             mc:Ignorable="d" 
+             Title="Simply create!" 
+             Height="160" Width="600" SizeToContent="Height" Loaded="Window_Loaded" Closing="Window_Closing">
+    <Window.Resources>
+        <ResourceDictionary>
+            <converter:NullableDateTimeToBooleanConverter x:Key="NullableDateTimeToBooleanConverter" />
+            <converter:BooleanToInvertedBooleanConverter x:Key="BooleanToInvertedBooleanConverter" />
+            <model:CreateCertificateModel x:Key="Model" />
+            <Style TargetType="TextBlock">
+                <Setter Property="Margin" Value="0 0 4 0" />
+                <Setter Property="VerticalAlignment" Value="Center" />
+            </Style>
+            <Style TargetType="TextBox">
+                <Setter Property="Margin" Value="4 2" />
+                <Setter Property="Padding" Value="2 1" />
+                <Setter Property="VerticalAlignment" Value="Center" />
+            </Style>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="CommonResource.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Window.Resources>
+    <Window.CommandBindings>
+        <CommandBinding x:Name="CopyCommandParameterCommandBinding" Command="{StaticResource CopyCommandParameterCommand}" Executed="CopyCommandParameterCommand_OnExecuted" CanExecute="CopyCommandParameterCommand_OnCanExecute" />
+    </Window.CommandBindings>
+    <Grid DataContext="{StaticResource Model}" Margin="4">
+        <Grid IsEnabled="{Binding IsBusy, Converter={StaticResource BooleanToInvertedBooleanConverter}}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="35*" />
+                <ColumnDefinition Width="143*"/>
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <StackPanel VerticalAlignment="Center" Grid.IsSharedSizeScope="True" Grid.ColumnSpan="2" Margin="0,2,0,3">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" SharedSizeGroup="left" />
+                        <ColumnDefinition  />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="Subject" />
+                    <TextBox Grid.Column="1">
+                        <TextBox.Text>
+                            <Binding Path="Subject" UpdateSourceTrigger="PropertyChanged">
+                                <Binding.ValidationRules>
+                                    <helper:RegexValidationRule Error="May not be empty" Pattern=".+" />
+                                </Binding.ValidationRules>
+                            </Binding>
+                        </TextBox.Text>
+                    </TextBox>
+                </Grid>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" SharedSizeGroup="left" />
+                        <ColumnDefinition  />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="KeyLength" />
+                    <TextBox Grid.Column="1" Text="{Binding KeyLength}" />
+                </Grid>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" SharedSizeGroup="left" />
+                        <ColumnDefinition />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="ValidDuration in days" VerticalAlignment="Center" />
+                    <TextBox VerticalAlignment="Center" Grid.Column="1" Text="{Binding ValidDurationInDays}" IsEnabled="{Binding SelectedDate, ElementName=DatePicker, Converter={StaticResource NullableDateTimeToBooleanConverter}}" />
+                    <DatePicker Grid.Column="2" SelectedDate="{Binding ExpirationDate}" Name="DatePicker" Margin="0 0 4 0" />
+                </Grid>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" SharedSizeGroup="left" />
+                        <ColumnDefinition  />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="PasswordLength" />
+                    <TextBox Grid.Column="1" Text="{Binding PasswordLength}" />
+                </Grid>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" SharedSizeGroup="left" />
+                        <ColumnDefinition  />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="Password" />
+                    <Grid Grid.Column="1" Margin="4 0 0 0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="34*" />
+                            <ColumnDefinition Width="675*"/>
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBox Text="{Binding Password}" Style="{DynamicResource CopyTextBox}" Grid.ColumnSpan="2"/>
+                        <Button Grid.Column="2" Content="CreateRandom" Click="Button_Click_1" Margin="0 0 4 0"/>
+                    </Grid>
+                </Grid>
+            </StackPanel>
+            <Button Content="Create!" Click="Button_Click" Grid.Column="2" HorizontalAlignment="Center" Margin="4" />
+        </Grid>
+    </Grid>
+</Window>

@@ -1,0 +1,309 @@
+﻿<Window x:Class="wSimpleEncryptDecrypt.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:system="clr-namespace:System;assembly=mscorlib"
+		xmlns:model="clr-namespace:wSimpleEncryptDecrypt.Model"
+		xmlns:converter="clr-namespace:wSimpleEncryptDecrypt.Converter"
+        Title="Simply encrypt!" Height="400" Width="625" Loaded="Window_Loaded" Closing="Window_Closing">
+    <Window.Resources>
+        <ResourceDictionary>
+            <model:MainViewModel x:Key="MainViewModel"/>
+            <converter:IsNotNullConverter x:Key="IsNotNullConverter" />
+            <converter:Base64Converter x:Key="Base64Converter" />
+            <converter:Utf8Converter x:Key="Utf8Converter" />
+            <converter:ScrollbarVisibilityMultiConverter x:Key="ScrollbarVisibilityMultiConverter" />
+            <RoutedUICommand x:Key="CreateIVCommand" />
+            <RoutedUICommand x:Key="CreateKeyCommand" />
+            <RoutedUICommand x:Key="CreateSelfSignedCertificateCommand" />
+            
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="CommonResource.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Window.Resources>
+    <Window.CommandBindings>
+        <CommandBinding x:Name="CreateIVCommandBinding" Command="{StaticResource CreateIVCommand}" Executed="CreateIVCommandBinding_OnExecuted" CanExecute="CommandBinding_OnCanExecute" />
+        <CommandBinding x:Name="CreateKeyCommandBinding" Command="{StaticResource CreateKeyCommand}" Executed="CreateKeyCommandBinding_OnExecuted" CanExecute="CommandBinding_OnCanExecute" />
+        <CommandBinding x:Name="CopyCommandParameterCommandBinding" Command="{StaticResource CopyCommandParameterCommand}" Executed="CopyCommandParameterCommand_OnExecuted" CanExecute="CopyCommandParameterCommand_OnCanExecute" />
+        <CommandBinding x:Name="CreateSelfSignedCertificateCommandBinding" Command="{StaticResource CreateSelfSignedCertificateCommand}" Executed="CreateSelfSignedCertificateCommand_OnExecuted"/>
+    </Window.CommandBindings>
+    <Grid Name="MainGrid" DataContext="{StaticResource MainViewModel}">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="2*"/>
+            <ColumnDefinition Width="4" />
+            <!--<ColumnDefinition />-->
+            <ColumnDefinition Width="3*" />
+        </Grid.ColumnDefinitions>
+        <!--<Image Grid.Column="2" Source="/wSimpleEncryptDecrypt;component/y u no.png" RenderOptions.BitmapScalingMode="Fant" Width="100" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0 20"/>-->
+        <GroupBox Padding="4">
+            <GroupBox.Header>
+                <StackPanel>
+                    <TextBlock Text="Certificate to encrypt" />
+                    <!--<Button Content="" />-->
+                </StackPanel>
+            </GroupBox.Header>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <Label Grid.Row="0" Content="StoreName" />
+                <ComboBox Grid.Row="0" Grid.Column="1" SelectedItem="{Binding SelectedStoreName}" ItemsSource="{Binding StoreNames}" VerticalAlignment="Center" />
+
+                <Label Grid.Column="0" Grid.Row="1" Content="StoreLocation" />
+                <ComboBox Grid.Row="1" Grid.Column="1" SelectedItem="{Binding SelectedStoreLocation}" ItemsSource="{Binding StoreLocations}" VerticalAlignment="Center" />
+                <Label Grid.Row="2" Content="Search" />
+                <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center" />
+                <Button Grid.Row="4" Content="Create new self signed certificate" Command="{StaticResource CreateSelfSignedCertificateCommand}"  HorizontalAlignment="Stretch" Grid.ColumnSpan="2" Margin="0 2" />
+                <ListView Name="lv" Grid.Column="0" Grid.Row="3" Grid.ColumnSpan="2" ItemsSource="{Binding FilteredCertificates}" SelectedValue="{Binding SelectedCertificate}" SelectedIndex="0">
+                    <ListView.ItemTemplate>
+                        <DataTemplate>
+                            <Grid Margin="4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition />
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+                                <TextBlock Grid.Row="0" Text="HasPrivateKey: " HorizontalAlignment="Right" />
+                                <CheckBox Grid.Row="0" Grid.Column="1" IsEnabled="False" BorderThickness="0" IsChecked="{Binding Certificate.HasPrivateKey, Mode=OneWay}" />
+                                <TextBlock Grid.Column="0" Grid.Row="1" Text="Subject: " HorizontalAlignment="Right" />
+                                <TextBlock Grid.Column="1" Grid.Row="1" Text="{Binding Certificate.Subject}" />
+                                <TextBlock Grid.Column="0" Grid.Row="2" Text="Thumbprint: " HorizontalAlignment="Right" />
+                                <TextBox Grid.Row="2" HorizontalAlignment="Left" Grid.Column="1" IsReadOnly="True" VerticalAlignment="Center" Text="{Binding Certificate.Thumbprint, Mode=OneWay}" BorderThickness="0" />
+                                <TextBlock Grid.Column="0" Grid.Row="3" Text="Valid from/to: " HorizontalAlignment="Right" />
+                                <StackPanel Grid.Column="1" Grid.Row="3" Orientation="Horizontal">
+                                    <TextBlock Text="{Binding Certificate.NotBefore}" />
+                                    <TextBlock Text="  /  " />
+                                    <TextBlock Text="{Binding Certificate.NotAfter}" />
+                                </StackPanel>
+                            </Grid>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+            </Grid>
+        </GroupBox>
+
+        <GridSplitter Grid.Column="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+
+        <Grid Grid.Column="2" Visibility="Visible">
+            <Grid.Resources>
+                <system:Double x:Key="EncryptionBoxMinWidth">290</system:Double>
+            </Grid.Resources>
+            <ScrollViewer VerticalScrollBarVisibility="Hidden" Name="parentScrollViewer">
+                <ScrollViewer.HorizontalScrollBarVisibility>
+                    <MultiBinding Converter="{StaticResource ScrollbarVisibilityMultiConverter}">
+                        <Binding Path="ActualWidth" RelativeSource="{RelativeSource Mode=Self}" />
+                        <Binding Source="{StaticResource EncryptionBoxMinWidth}" />
+                        <Binding Path="SelectedItems.Count" ElementName="lv" />
+                    </MultiBinding>
+                </ScrollViewer.HorizontalScrollBarVisibility>
+                <ItemsControl ItemsSource="{Binding SelectedItems, ElementName=lv}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <UniformGrid Rows="1"/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+							<GroupBox MinWidth="{StaticResource EncryptionBoxMinWidth}" MaxWidth="{Binding ActualWidth, ElementName=parentScrollViewer}" AllowDrop="True" PreviewDrop="UIElement_OnPreviewDrop" Drop="UIElement_OnDrop">
+                                <GroupBox.Header>
+                                    <TextBox HorizontalAlignment="Stretch" MaxWidth="300" Text="{Binding Certificate.Thumbprint, Mode=OneWay}" IsReadOnly="True" />
+                                </GroupBox.Header>
+                                <Grid IsEnabled="{Binding Converter={StaticResource IsNotNullConverter}}">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition />
+                                    </Grid.RowDefinitions>
+
+                                    <GroupBox Grid.Row="0" Padding="4" Grid.IsSharedSizeScope="True">
+                                        <GroupBox.Header>
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Text="Certificate Encryption" />
+                                            </StackPanel>
+                                        </GroupBox.Header>
+                                        <Grid>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto" />
+                                                <RowDefinition Height="Auto" />
+                                                <RowDefinition Height="Auto" />
+                                                <RowDefinition Height="Auto" />
+                                            </Grid.RowDefinitions>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" Grid.Row="0" Text="Encrypted: " HorizontalAlignment="Right" />
+                                            <TextBox Grid.Column="1" Grid.Row="0" AcceptsReturn="True" AcceptsTab="True" Style="{DynamicResource CopyTextBox}">
+                                                <TextBox.Text>
+                                                    <Binding Path="CertificateEncrypedValue.EncryptedValue" UpdateSourceTrigger="PropertyChanged" Converter="{StaticResource Base64Converter}">
+                                                        <Binding.ValidationRules>
+                                                            <converter:Base64ConverterValidationRule />
+                                                        </Binding.ValidationRules>
+                                                    </Binding>
+                                                </TextBox.Text>
+                                            </TextBox>
+                                            <TextBlock Grid.Column="0" Grid.Row="1" Text="Decrypted (base64): " HorizontalAlignment="Right" />
+                                            <TextBox Grid.Column="1" Grid.Row="1" AcceptsReturn="True" AcceptsTab="True">
+                                                <TextBox.Text>
+                                                    <Binding Path="CertificateEncrypedValue.DecryptedValue" Converter="{StaticResource Base64Converter}">
+                                                        <Binding.ValidationRules>
+                                                            <converter:Base64ConverterValidationRule />
+                                                        </Binding.ValidationRules>
+                                                    </Binding>
+                                                </TextBox.Text>
+                                            </TextBox>
+                                            <TextBlock Grid.Column="0" Grid.Row="2" Text="Decrypted: " HorizontalAlignment="Right" />
+                                            <TextBox Grid.Column="1" Grid.Row="2" AcceptsReturn="True" AcceptsTab="True" IsReadOnly="False">
+                                                <TextBox.Text>
+                                                    <Binding Path="CertificateEncrypedValue.DecryptedValue" UpdateSourceTrigger="PropertyChanged" Converter="{StaticResource Utf8Converter}">
+                                                        <Binding.ValidationRules>
+                                                            <converter:Utf8ConverterValidationRule />
+                                                        </Binding.ValidationRules>
+                                                    </Binding>
+                                                </TextBox.Text>
+                                            </TextBox>
+                                        </Grid>
+                                    </GroupBox>
+                                    <GroupBox Grid.Row="1" Header="Encryption initialization" Padding="4">
+                                        <Grid>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto" />
+                                                <RowDefinition Height="*" />
+                                            </Grid.RowDefinitions>
+                                            <Grid>
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="Auto" />
+                                                </Grid.RowDefinitions>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto" />
+                                                    <ColumnDefinition />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Text="Encrypted IV: " HorizontalAlignment="Right" />
+                                                <TextBox Grid.Column="1" Grid.Row="0" Grid.ColumnSpan="2" AcceptsReturn="True" AcceptsTab="True" Style="{DynamicResource CopyTextBox}">
+                                                    <TextBox.Text>
+                                                        <Binding Path="CertificateEncryptedIv.EncryptedValue" UpdateSourceTrigger="PropertyChanged" Converter="{StaticResource Base64Converter}">
+                                                            <Binding.ValidationRules>
+                                                                <converter:Base64ConverterValidationRule />
+                                                            </Binding.ValidationRules>
+                                                        </Binding>
+                                                    </TextBox.Text>
+                                                </TextBox>
+                                                <TextBlock Grid.Column="0" Grid.Row="1" Text="Encrypted Key: " HorizontalAlignment="Right" />
+                                                <TextBox Grid.Column="1" Grid.Row="1" Grid.ColumnSpan="2" AcceptsReturn="True" AcceptsTab="True" Style="{DynamicResource CopyTextBox}" >
+                                                    <TextBox.Text>
+                                                        <Binding Path="CertificateEncryptedKey.EncryptedValue" UpdateSourceTrigger="PropertyChanged" Converter="{StaticResource Base64Converter}">
+                                                            <Binding.ValidationRules>
+                                                                <converter:Base64ConverterValidationRule />
+                                                            </Binding.ValidationRules>
+                                                        </Binding>
+                                                    </TextBox.Text>
+                                                </TextBox>
+                                                <TextBlock Grid.Column="0" Grid.Row="2" Text="Decrypted IV: " HorizontalAlignment="Right" />
+                                                <TextBox Grid.Column="1" Grid.Row="2" AcceptsReturn="True" AcceptsTab="True" IsReadOnly="True">
+                                                    <TextBox.Text>
+                                                        <Binding Path="CertificateEncryptedIv.DecryptedValue" UpdateSourceTrigger="PropertyChanged" Converter="{StaticResource Base64Converter}">
+                                                            <Binding.ValidationRules>
+                                                                <converter:Base64ConverterValidationRule />
+                                                            </Binding.ValidationRules>
+                                                        </Binding>
+                                                    </TextBox.Text>
+                                                </TextBox>
+                                                <TextBlock Grid.Column="0" Grid.Row="3" Text="Decrypted Key: " HorizontalAlignment="Right" />
+                                                <TextBox Grid.Column="1" Grid.Row="3" AcceptsReturn="True" AcceptsTab="True" IsReadOnly="True">
+                                                    <TextBox.Text>
+                                                        <Binding Path="CertificateEncryptedKey.DecryptedValue" UpdateSourceTrigger="PropertyChanged" Converter="{StaticResource Base64Converter}">
+                                                            <Binding.ValidationRules>
+                                                                <converter:Base64ConverterValidationRule />
+                                                            </Binding.ValidationRules>
+                                                        </Binding>
+                                                    </TextBox.Text>
+                                                </TextBox>
+                                                <Button Content="Create" Grid.Column="2" Grid.Row="2" CommandParameter="{Binding}" Command="{StaticResource CreateIVCommand}" />
+                                                <Button Content="Create" Grid.Column="2" Grid.Row="3" CommandParameter="{Binding}" Command="{StaticResource CreateKeyCommand}" />
+                                            </Grid>
+                                            <GroupBox Grid.Row="1" Header="Encryption" Padding="4" Grid.IsSharedSizeScope="True">
+                                                <Grid>
+                                                    <Grid.RowDefinitions>
+                                                        <RowDefinition Height="*" />
+                                                        <RowDefinition Height="*" />
+                                                        <RowDefinition Height="*" />
+                                                    </Grid.RowDefinitions>
+                                                    <Grid Grid.Row="0">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto" SharedSizeGroup="_c1" />
+                                                            <ColumnDefinition />
+                                                        </Grid.ColumnDefinitions>
+                                                        <TextBlock Text="Encrypted value (base64): " HorizontalAlignment="Right" />
+                                                        <TextBox Grid.Column="1">
+                                                            <TextBox.Text>
+                                                                <Binding Path="AesEncryptedValue.EncryptedValue" UpdateSourceTrigger="PropertyChanged" Converter="{StaticResource Base64Converter}">
+                                                                    <Binding.ValidationRules>
+                                                                        <converter:Base64ConverterValidationRule />
+                                                                    </Binding.ValidationRules>
+                                                                </Binding>
+                                                            </TextBox.Text>
+                                                        </TextBox>
+                                                    </Grid>
+                                                    <Grid Grid.Row="1">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto" SharedSizeGroup="_c1" />
+                                                            <ColumnDefinition />
+                                                        </Grid.ColumnDefinitions>
+                                                        <TextBlock Text="Decrypted value (base64): " HorizontalAlignment="Right" />
+                                                        <TextBox Grid.Column="1" AcceptsReturn="True" AcceptsTab="True">
+                                                            <TextBox.Text>
+                                                                <Binding Path="AesEncryptedValue.DecryptedValue" Converter="{StaticResource Base64Converter}">
+                                                                    <Binding.ValidationRules>
+                                                                        <converter:Base64ConverterValidationRule />
+                                                                    </Binding.ValidationRules>
+                                                                </Binding>
+                                                            </TextBox.Text>
+                                                        </TextBox>
+                                                    </Grid>
+                                                    <Grid Grid.Row="2">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto" SharedSizeGroup="_c1" />
+                                                            <ColumnDefinition />
+                                                        </Grid.ColumnDefinitions>
+                                                        <TextBlock Text="Decrypted value (string): " HorizontalAlignment="Right" />
+                                                        <TextBox Grid.Column="1">
+                                                            <TextBox.Text>
+                                                                <Binding Path="AesEncryptedValue.DecryptedValue" UpdateSourceTrigger="PropertyChanged" Converter="{StaticResource Utf8Converter}">
+                                                                    <Binding.ValidationRules>
+                                                                        <converter:Utf8ConverterValidationRule />
+                                                                    </Binding.ValidationRules>
+                                                                </Binding>
+                                                            </TextBox.Text>
+                                                        </TextBox>
+                                                    </Grid>
+                                                </Grid>
+                                            </GroupBox>
+                                        </Grid>
+                                    </GroupBox>
+                                </Grid>
+                            </GroupBox>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+        </Grid>
+    </Grid>
+</Window>

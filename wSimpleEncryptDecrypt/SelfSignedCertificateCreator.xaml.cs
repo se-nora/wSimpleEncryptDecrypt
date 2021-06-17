@@ -130,8 +130,8 @@ namespace wSimpleEncryptDecrypt
                         _targetLocation,
                         model.Password,
                         model.KeyLength,
-                        DateTime.Now,
-                        DateTime.Now.Add(model.ValidDuration));
+                        DateTime.UtcNow,
+                        DateTime.UtcNow.Add(model.ValidDuration));
 
                     Dispatcher.Invoke(() =>
                     {
